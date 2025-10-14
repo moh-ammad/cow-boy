@@ -12,6 +12,14 @@ ConnectToDb();
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+app.get('/callback', (req, res) => {
+  const code = req.query.code;
+  const state = req.query.state;
+  console.log("Received OAuth2 code:", code);
+  res.send("Received code: " + code);
+});
+
 app.use("/api/rvm", rvmRoutes);
 
 app.listen(port, () => {

@@ -1,4 +1,4 @@
-// components/RvmForm.jsx
+// src/components/RvmForm.jsx
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { showError, showSuccess } from "../libs/helper";
@@ -13,13 +13,31 @@ const initialPayload = {
   foreign_id: "",
 };
 
-const RvmForm = ({ initialData, onSuccess }) => {
+const RvmForm = ({ initialData = null, onSuccess }) => {
   const [formData, setFormData] = useState(initialPayload);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      // map only fields you expect (avoid extra props)
+      const {
+        team_id,
+        secret,
+        brand_id,
+        recording_id,
+        phone_number,
+        forwarding_number,
+        foreign_id,
+      } = initialData;
+      setFormData({
+        team_id,
+        secret,
+        brand_id,
+        recording_id,
+        phone_number,
+        forwarding_number,
+        foreign_id,
+      });
     } else {
       setFormData(initialPayload);
     }
@@ -33,53 +51,70 @@ const RvmForm = ({ initialData, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-
     try {
-      if (initialData?._id) {
-        // Update
+      if (initialData && initialData._id) {
+        // update
         await axios.put(`/api/rvm/${initialData._id}`, formData);
-        showSuccess("Payload updated");
+        showSuccess("Updated successfully");
       } else {
-        // Create
+        // create
         await axios.post("/api/rvm", formData);
-        showSuccess("Payload created and forwarded");
+        showSuccess("Created successfully");
       }
-
       onSuccess?.();
     } catch (err) {
-        console.error(err);
-      showError("Something went wrong");
+      console.error(err);
+      showError("Submission failed");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white p-6 rounded-lg shadow-md space-y-4"
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {Object.keys(initialPayload).map((key) => (
-          <div key={key}>
-            <label className="block text-sm font-medium capitalize text-gray-700 mb-1">
+        {Object.entries(formData).map(([key, value]) => (
+          <div key={key} className="flex flex-col">
+            <label
+              htmlFor={key}
+              className="mb-1 font-medium text-gray-700 capitalize"
+            >
               {key.replace(/_/g, " ")}
             </label>
             <input
+              id={key}
               name={key}
-              value={formData[key]}
+              value={value}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         ))}
       </div>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="mt-4 px-6 py-2 bg-primary text-white rounded hover:bg-blue-700 transition"
-      >
-        {submitting ? "Submitting..." : initialData ? "Update Payload" : "Create Payload"}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`px-6 py-2 rounded text-white ${
+            submitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          } transition`}
+        >
+          {submitting
+            ? initialData
+              ? "Updating..."
+              : "Creating..."
+            : initialData
+            ? "Update"
+            : "Create"}
+        </button>
+      </div>
     </form>
   );
 };
